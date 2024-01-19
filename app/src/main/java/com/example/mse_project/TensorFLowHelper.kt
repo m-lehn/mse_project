@@ -5,6 +5,7 @@ import com.example.mse_project.ml.Model
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionContext
 import androidx.compose.ui.platform.LocalContext
+import androidx.media3.common.util.Log
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
 import java.io.IOException
@@ -14,15 +15,16 @@ import java.nio.ByteOrder
 object TensorFLowHelper {
 
     val imageSize = 32
+    //val imageSize = 264
 
     @Composable
     fun classifyImage(image: Bitmap, callback : (@Composable (fruit : String) -> Unit)) {
             val model: Model = Model.newInstance(LocalContext.current)
-
             // Creates inputs for reference.
             val inputFeature0 =
                 TensorBuffer.createFixedSize(intArrayOf(1, 32, 32, 3), DataType.FLOAT32)
-            val byteBuffer: ByteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3)
+                //TensorBuffer.createFixedSize(intArrayOf(1, 264, 264, 3), DataType.FLOAT32)
+        val byteBuffer: ByteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3)
             byteBuffer.order(ByteOrder.nativeOrder())
             val intValues = IntArray(imageSize * imageSize)
             image.getPixels(intValues, 0, image.width, 0, 0, image.width, image.height)
@@ -34,6 +36,9 @@ object TensorFLowHelper {
                     byteBuffer.putFloat((`val` shr 16 and 0xFF) * (1f / 1))
                     byteBuffer.putFloat((`val` shr 8 and 0xFF) * (1f / 1))
                     byteBuffer.putFloat((`val` and 0xFF) * (1f / 1))
+                    //byteBuffer.putFloat((`val` shr 16 and 0xFF) * (1f / 255))
+                    //byteBuffer.putFloat((`val` shr 8 and 0xFF) * (1f / 255))
+                    //byteBuffer.putFloat((`val` and 0xFF) * (1f / 255))
                 }
             }
             inputFeature0.loadBuffer(byteBuffer)
@@ -52,6 +57,8 @@ object TensorFLowHelper {
                 }
             }
             val classes = arrayOf("Pineapple", "Apple", "Banana", "Orange")
+            //val classes = arrayOf("Class1", "Class2", "Class3", "Class4", "Class5", "Class6", "Class7", "Class8", "Class9")
+
             callback.invoke(classes[maxPos])
 
 
