@@ -15,8 +15,16 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,17 +35,25 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddAPhoto
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material.icons.sharp.*
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
@@ -47,6 +63,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -57,15 +74,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.exifinterface.media.ExifInterface
@@ -94,63 +114,92 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-//@Composable
-//fun LockScreenOrientation(orientation: Int) {
-//    val context = LocalContext.current
-//    DisposableEffect(Unit) {
-//        val activity = context.findActivity() ?: return@DisposableEffect onDispose {}
-//        val originalOrientation = activity.requestedOrientation
-//        activity.requestedOrientation = orientation
-//        onDispose {
-//            // restore original orientation when view disappears
-//            activity.requestedOrientation = originalOrientation
-//        }
-//    }
-//}
-//
-//fun Context.findActivity(): Activity? = when (this) {
-//    is Activity -> this
-//    is ContextWrapper -> baseContext.findActivity()
-//    else -> null
-//}
-
-
-fun decodeSampledBitmapFromFile(filePath: String, reqWidth: Int, reqHeight: Int): Bitmap {
-    // First decode with inJustDecodeBounds=true to check dimensions
-    val options = BitmapFactory.Options().apply {
-        inJustDecodeBounds = true
-    }
-    BitmapFactory.decodeFile(filePath, options)
-
-    // Calculate inSampleSize
-    options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight)
-
-    // Decode bitmap with inSampleSize set
-    options.inJustDecodeBounds = false
-    return BitmapFactory.decodeFile(filePath, options)
+@Composable
+fun WarningPopupDialog(onDismissRequest: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = { /* Dismiss dialog when user touches outside */ },
+        title = {
+            Text(text = "Important Warning")
+        },
+        text = {
+            Column {
+                Text("Please be aware that this app uses a neural network to classify mushrooms. However, neural networks cannot guarantee absolutely correct results.")
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("Always double-check with a professional or reliable source before making any decisions based on the app's classifications.")
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onDismissRequest
+            ) {
+                Text("Understand")
+            }
+        },
+        icon = {
+            Icon(Icons.Default.WarningAmber, contentDescription = "Warn")
+        }
+    )
 }
 
-fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
-    val (height: Int, width: Int) = options.run { outHeight to outWidth }
-    var inSampleSize = 1
-
-    if (height > reqHeight || width > reqWidth) {
-        val halfHeight: Int = height / 2
-        val halfWidth: Int = width / 2
-
-        // Calculate the largest inSampleSize value that is a power of 2 and keeps both
-        // height and width larger than the requested height and width.
-        while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
-            inSampleSize *= 2
+@Composable
+fun AdvertismentPopup(
+    patreonImageId: Int,
+    isPopupVisible: Boolean,
+    onCloseClick: () -> Unit
+) {
+    if (isPopupVisible) {
+        Dialog(onDismissRequest = onCloseClick) {
+            Box(
+                modifier = Modifier
+                    .wrapContentSize()
+                    .background(Color.White, shape = RoundedCornerShape(8.dp))
+            ) {
+                Image(
+                    painter = painterResource(id = patreonImageId),
+                    contentDescription = "Patreon Image"
+                )
+                IconButton(
+                    onClick = onCloseClick,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .size(24.dp)
+                        .background(
+                            color = Color.Transparent,
+                            shape = RectangleShape
+                        )
+                        .border(1.dp, Color.Gray, RectangleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close",
+                        tint = Color.Gray
+                    )
+                }
+            }
         }
     }
-
-    return inSampleSize
 }
+
 
 //@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyScreen() {
+
+    // Initial Warning
+    var showWarning by rememberSaveable { mutableStateOf(true) }
+    if (showWarning) {
+        WarningPopupDialog(onDismissRequest = { showWarning = false })
+    }
+
+    // Advertisment
+    var untillAdvertisment by rememberSaveable { mutableStateOf(3) }
+    var showPatreonPopup by rememberSaveable { mutableStateOf(false) }
+    AdvertismentPopup(
+        patreonImageId = R.drawable.patreon, // Replace with your image resource ID
+        isPopupVisible = showPatreonPopup,
+        onCloseClick = { showPatreonPopup = false }
+    )
+
     val context = LocalContext.current
     var bitmap by rememberSaveable { mutableStateOf<Bitmap?>(null) }
 
@@ -158,17 +207,13 @@ fun MyScreen() {
     val file = rememberSaveable { context.createImageFile() }
     val uri = rememberSaveable { FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", file) }
 
-    // Camera launcher
-//    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { isSuccess ->
-//        if (isSuccess) {
-//            val scaledBitmap = decodeSampledBitmapFromFile(file.absolutePath, 224, 224)
-//            val rotatedBitmap = rotateBitmapIfNeeded(file.absolutePath, scaledBitmap)
-//            bitmap = cropSquare(rotatedBitmap) // Optional if additional cropping is needed
-//        }
-//    }
-
     val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { isSuccess ->
         if (isSuccess) {
+            untillAdvertisment--
+            if (untillAdvertisment == 0) {
+                untillAdvertisment = 3
+                showPatreonPopup = true
+            }
             bitmap = cropSquare(rotateBitmapIfNeeded(file.absolutePath, BitmapFactory.decodeFile(file.absolutePath)))
         }
     }
@@ -200,7 +245,7 @@ fun MyScreen() {
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
     val screenWidth = configuration.screenWidthDp.dp
-    val size = min(screenWidth, screenHeight) - 64.dp //Padding!
+    val size = min(screenWidth, screenHeight) - 64.dp // - ?.dp Padding
     Box(
         modifier = Modifier
             .size(size)
@@ -261,17 +306,9 @@ private fun cropSquare(bitmap: Bitmap): Bitmap {
     return Bitmap.createBitmap(bitmap, startX, startY, size, size)
 }
 
-private fun cropAndScaleBitmap(bitmap: Bitmap): Bitmap {
-    // Crop to square first
-    val squareSize = min(bitmap.width, bitmap.height)
-    val startX = (bitmap.width - squareSize) / 2
-    val startY = (bitmap.height - squareSize) / 2
-    val croppedBitmap = Bitmap.createBitmap(bitmap, startX, startY, squareSize, squareSize)
-
-    // Then scale to the desired size
-    return Bitmap.createScaledBitmap(croppedBitmap, 224, 224, true)
+private fun scaleBitmap(bitmap: Bitmap): Bitmap {
+    return Bitmap.createScaledBitmap(bitmap, 224, 224, true)
 }
-
 
 @Composable
 fun ClassifiedResult(
@@ -323,6 +360,54 @@ fun ImageArea(
     )
 }
 
+@Composable
+fun NewsTicker(textList: List<String>) {
+    val infiniteTransition = rememberInfiniteTransition(label = "infiniteTransition")
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    val translateAnim = infiniteTransition.animateFloat(
+        initialValue = 1.2f, // Start position
+        targetValue = -1.2f, // End position
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 20000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ), label = "translateAnim"
+    )
+
+    val totalContentWidth = remember { mutableStateOf(0f) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight(),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        Row(
+            modifier = Modifier
+                .onGloballyPositioned { coordinates ->
+                    totalContentWidth.value = coordinates.size.width.toFloat()
+                }
+                .graphicsLayer {
+                    translationX = translateAnim.value * totalContentWidth.value
+                }
+                .wrapContentWidth(unbounded = true)
+                //.width(1000.dp)
+        ) {
+            textList.forEach { text ->
+                Column {
+                    Text(text = text, maxLines = 1, fontWeight = FontWeight.Medium)
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    //Icon(Icons.Default.WarningAmber, contentDescription = "Warn")
+                    Text(text = " +++ ", maxLines = 1, fontWeight = FontWeight.Medium)
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+            }
+        }
+    }
+}
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Scaffold(
@@ -346,18 +431,25 @@ fun Scaffold(
                 contentColor = Bony,//MaterialTheme.colorScheme.primary,
             ) {
                 Row (verticalAlignment = Alignment.CenterVertically){
-                    Column { Icon(Icons.Default.WarningAmber, contentDescription = "Warn") }
-                    Spacer(Modifier.size(10.dp))
-                    Column {
-                        Text(
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            textAlign = TextAlign.Center,
-                            text = "Created by Mirko Lehn",
-                        )
-                    }
-                    Spacer(Modifier.size(10.dp))
-                    Column { Icon(Icons.Default.WarningAmber, contentDescription = "Warn") }
+                    //Column { Icon(Icons.Default.WarningAmber, contentDescription = "Warn") }
+//                    Spacer(Modifier.size(10.dp))
+//                    Column {
+//                        Text(
+//                            modifier = Modifier
+//                                .fillMaxWidth(),
+//                            textAlign = TextAlign.Center,
+//                            text = "Created by Mirko Lehn",
+//                        )
+//                    }
+//                    Spacer(Modifier.size(10.dp))
+                    val message1 = "created by Mirko Lehn"
+                    val message2 = "correctness not guaranteed"
+                    val message3 = "consider supporting me on patreon"
+                    val message4 = "eat more mushrooms"
+                    val message5 = "consider buying me some coffee"
+                    val tickerTextList = listOf(message1, message2, message3, message4, message5)
+                    NewsTicker(textList = tickerTextList)
+                    //Column { Icon(Icons.Default.WarningAmber, contentDescription = "Warn") }
                 }
             }
         },
