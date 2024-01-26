@@ -4,10 +4,12 @@ package com.example.mse_project
 //import android.media.ExifInterface
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -25,6 +27,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,8 +44,10 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddAPhoto
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Park
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material.icons.sharp.*
@@ -51,10 +56,10 @@ import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -80,6 +85,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -145,21 +151,23 @@ fun WarningPopupDialog(onDismissRequest: () -> Unit) {
 fun AdvertismentPopup(
     patreonImageId: Int,
     isPopupVisible: Boolean,
-    onCloseClick: () -> Unit
+    onCloseClick: () -> Unit,
+    onBoxClick: () -> Unit
 ) {
     if (isPopupVisible) {
-        Dialog(onDismissRequest = onCloseClick) {
+        Dialog(onDismissRequest = {}) {
             Box(
                 modifier = Modifier
+                    .clickable(onClick = onBoxClick)
                     .wrapContentSize()
-                    .background(Color.White, shape = RoundedCornerShape(8.dp))
+                    .background(Color.Transparent, shape = RoundedCornerShape(8.dp))
             ) {
                 Image(
                     painter = painterResource(id = patreonImageId),
                     contentDescription = "Patreon Image"
                 )
                 IconButton(
-                    onClick = onCloseClick,
+                    onClick = onCloseClick, // Only closes the dialog
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .size(24.dp)
@@ -180,10 +188,22 @@ fun AdvertismentPopup(
     }
 }
 
+fun openWebPage(context: Context, url: String) {
+    //Log.d("AdvertismentPopup", "Attempting to open web page: $url")
+    val webpage: Uri = Uri.parse(url)
+    val intent = Intent(Intent.ACTION_VIEW, webpage)
+    if (intent.resolveActivity(context.packageManager) != null) {
+        context.startActivity(intent)
+    } else {
+        //Log.e("AdvertismentPopup", "No Intent available to handle action")
+    }
+}
 
-//@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyScreen() {
+
+    val context = LocalContext.current
+    var bitmap by rememberSaveable { mutableStateOf<Bitmap?>(null) }
 
     // Initial Warning
     var showWarning by rememberSaveable { mutableStateOf(true) }
@@ -192,16 +212,15 @@ fun MyScreen() {
     }
 
     // Advertisment
+    val webpageUrl = "https://www.patreon.com/"
     var untillAdvertisment by rememberSaveable { mutableStateOf(3) }
     var showPatreonPopup by rememberSaveable { mutableStateOf(false) }
     AdvertismentPopup(
-        patreonImageId = R.drawable.patreon, // Replace with your image resource ID
+        patreonImageId = R.drawable.patreon,
         isPopupVisible = showPatreonPopup,
-        onCloseClick = { showPatreonPopup = false }
+        onCloseClick = { showPatreonPopup = false },
+        onBoxClick = { openWebPage(context, webpageUrl) }
     )
-
-    val context = LocalContext.current
-    var bitmap by rememberSaveable { mutableStateOf<Bitmap?>(null) }
 
     // Prepare a file and URI for the captured image
     val file = rememberSaveable { context.createImageFile() }
@@ -245,7 +264,7 @@ fun MyScreen() {
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
     val screenWidth = configuration.screenWidthDp.dp
-    val size = min(screenWidth, screenHeight) - 64.dp // - ?.dp Padding
+    val size = min(screenWidth, screenHeight) - 100.dp // - ?.dp Padding
     Box(
         modifier = Modifier
             .size(size)
@@ -311,41 +330,109 @@ private fun scaleBitmap(bitmap: Bitmap): Bitmap {
 }
 
 @Composable
-fun ClassifiedResult(
-    bitmap: Bitmap
-){
+fun ClassifiedResult(bitmap: Bitmap) {
+    val context = LocalContext.current
+    val (showPopup, setShowPopup) = remember { mutableStateOf(false) }
+    var classificationResult by remember { mutableStateOf("") }
+    var infoText by remember { mutableStateOf("") }
+
     bitmap.let {
         Log.d("classifiedText", "classifiedText")
         val scaledBitmap = Bitmap.createScaledBitmap(cropSquare(it), imageSize, imageSize, false)
-        TensorFLowHelper.classifyImage(scaledBitmap) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Image is classified as:",
-                    style = TextStyle(
-                        fontSize = 24.sp,
-                        color = Color.White,
-                        shadow = Shadow(
-                            color = Color.Black, offset = Offset(5.0f, 5.0f), blurRadius = 3f
-                        )
-                    )
+        TensorFLowHelper.classifyImage(scaledBitmap) { result ->
+            classificationResult = result
+            infoText = getInfoTextForClassification(result)
+        }
+    }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+
+        Text(
+            text = "Image is classified as:",
+            modifier = Modifier.clickable { setShowPopup(true) },
+            style = TextStyle(
+                fontSize = 24.sp,
+                color = Color.White,
+                shadow = Shadow(
+                    color = Color.Black, offset = Offset(5.0f, 5.0f), blurRadius = 3f
                 )
-                Text(
-                    text = it,
-                    color = Color.White,
-                    fontSize = 35.sp,
-                    style = TextStyle(
-                        fontSize = 35.sp,
-                        shadow = Shadow(
-                            color = Color.Black, offset = Offset(5.0f, 5.0f), blurRadius = 3f
-                        )
-                    )
+            )
+        )
+        Text(
+            text = classificationResult,
+            color = Color.White,
+            fontSize = 35.sp,
+            modifier = Modifier.clickable { setShowPopup(true) },
+            style = TextStyle(
+                fontSize = 35.sp,
+                shadow = Shadow(
+                    color = Color.Black, offset = Offset(5.0f, 5.0f), blurRadius = 3f
                 )
+            )
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Icon(Icons.Default.Info, modifier = Modifier.clickable { setShowPopup(true) }, contentDescription = "MoreInformation")
+        Text(
+            text = "info",
+            modifier = Modifier.clickable { setShowPopup(true) },
+            style = TextStyle(
+                fontSize = 16.sp,
+                color = Color.White,
+                shadow = Shadow(
+                    color = Color.Black, offset = Offset(4.0f, 4.0f), blurRadius = 3f
+                )
+            )
+        )
+    }
+
+    if (showPopup) {
+        MushroomInfoDialog(
+            mushroomClass = classificationResult,
+            infoText = infoText,
+            onDismiss = { setShowPopup(false) }
+        )
+    }
+}
+
+@Composable
+fun MushroomInfoDialog(
+    mushroomClass: String, // Add this parameter for the mushroom class name
+    infoText: String,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = mushroomClass) }, // Use mushroomClass here for the title
+        text = { Text(text = infoText) },
+        confirmButton = {
+            Button(onClick = onDismiss) {
+                Text("Close")
             }
         }
+    )
+}
+
+
+
+@Composable
+fun getInfoTextForClassification(classification: String): String {
+    return when (classification) {
+        "Agaricus" -> stringResource(R.string.agaricus_description)
+        "Amanita" -> stringResource(R.string.amanita_description)
+        "Boletus" -> stringResource(R.string.boletus_description)
+        "Cortinarius" -> stringResource(R.string.cortinarius_description)
+        "Entoloma" -> stringResource(R.string.entoloma_description)
+        "Hygrocybe" -> stringResource(R.string.hygrocybe_description)
+        "Lactarius" -> stringResource(R.string.lactarius_description)
+        "Russula" -> stringResource(R.string.russula_description)
+        "Suillus" -> stringResource(R.string.suillus_description)
+        else -> "Information not available"
     }
 }
 
@@ -365,10 +452,11 @@ fun NewsTicker(textList: List<String>) {
     val infiniteTransition = rememberInfiniteTransition(label = "infiniteTransition")
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val translateAnim = infiniteTransition.animateFloat(
-        initialValue = 1.2f, // Start position
-        targetValue = -1.2f, // End position
+        // magic numbers:
+        initialValue = 3.63f - (screenWidth.value * 0.0025f), // Start position
+        targetValue = -3.63f + (screenWidth.value * 0.0025f), // End position
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 20000, easing = LinearEasing),
+            animation = tween(durationMillis = screenWidth.value.toInt()*55, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ), label = "translateAnim"
     )
@@ -387,7 +475,7 @@ fun NewsTicker(textList: List<String>) {
                     totalContentWidth.value = coordinates.size.width.toFloat()
                 }
                 .graphicsLayer {
-                    translationX = translateAnim.value * totalContentWidth.value
+                    translationX = (translateAnim.value * totalContentWidth.value)
                 }
                 .wrapContentWidth(unbounded = true)
                 //.width(1000.dp)
@@ -407,6 +495,61 @@ fun NewsTicker(textList: List<String>) {
     }
 }
 
+//@OptIn(ExperimentalMaterial3Api::class)
+//@Composable
+//fun Scaffold(
+//    topBarTitle: String,
+//    onFabClick: () -> Unit,
+//    content: @Composable (Modifier) -> Unit
+//) {
+//    Scaffold(
+//        topBar = {
+//            TopAppBar(
+//                title = {
+//                    Row(verticalAlignment = Alignment.CenterVertically) {
+//                        Text(topBarTitle)
+//                        Spacer(Modifier.width(8.dp)) // Space between text and icon
+//                        Icon(Icons.Default.Park, contentDescription = "MoreInformation")
+//                    }
+//                }
+//            )
+//        },
+//        bottomBar = {
+//            BottomAppBar(
+//                modifier = Modifier
+//                    .height(50.dp),
+//                containerColor = MaterialTheme.colorScheme.background,
+//                contentColor = Bony,//MaterialTheme.colorScheme.primary,
+//            ) {
+//                Row (verticalAlignment = Alignment.CenterVertically){
+//                    val message1 = "created by Mirko Lehn"
+//                    val message2 = "correctness not guaranteed"
+//                    val message3 = "consider supporting me on patreon"
+//                    val message4 = "eat more mushrooms"
+//                    val message5 = "consider buying me some coffee"
+//                    val tickerTextList = listOf(message1, message2, message3, message4, message5)
+//                    NewsTicker(textList = tickerTextList)
+//                }
+//            }
+//        },
+//        floatingActionButton = {
+//            OutlinedButton(
+//                onClick = onFabClick,
+//                border = BorderStroke(2.dp, Color.White),
+//                modifier = Modifier.size(width = 70.dp, height = 70.dp),
+//                shape = RoundedCornerShape(50),
+//            ) {
+//                //camera_enhance
+//                //Icon(Icons.Default.AddAPhoto, contentDescription = "AddPhoto")
+//                Icon(Icons.Default.CameraAlt, contentDescription = "AddPhoto")
+//                //Icon(Icons.Rounded.Menu, contentDescription = "Localized description")
+//            }
+//        },
+//
+//    ) { paddingValues ->
+//        content(Modifier.padding(paddingValues))
+//    }
+//}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -419,9 +562,26 @@ fun Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(topBarTitle)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(topBarTitle)
+                        Spacer(Modifier.width(8.dp)) // Space between text and icon
+                        Icon(Icons.Default.Park, contentDescription = "MoreInformation")
+                    }
                 }
             )
+        },
+        floatingActionButton = {
+            OutlinedButton(
+                onClick = onFabClick,
+                border = BorderStroke(2.dp, Color.White),
+                modifier = Modifier.size(width = 70.dp, height = 70.dp),
+                shape = RoundedCornerShape(50),
+            ) {
+                //camera_enhance
+                //Icon(Icons.Default.AddAPhoto, contentDescription = "AddPhoto")
+                Icon(Icons.Default.CameraAlt, contentDescription = "AddPhoto")
+                //Icon(Icons.Rounded.Menu, contentDescription = "Localized description")
+            }
         },
         bottomBar = {
             BottomAppBar(
@@ -430,18 +590,7 @@ fun Scaffold(
                 containerColor = MaterialTheme.colorScheme.background,
                 contentColor = Bony,//MaterialTheme.colorScheme.primary,
             ) {
-                Row (verticalAlignment = Alignment.CenterVertically){
-                    //Column { Icon(Icons.Default.WarningAmber, contentDescription = "Warn") }
-//                    Spacer(Modifier.size(10.dp))
-//                    Column {
-//                        Text(
-//                            modifier = Modifier
-//                                .fillMaxWidth(),
-//                            textAlign = TextAlign.Center,
-//                            text = "Created by Mirko Lehn",
-//                        )
-//                    }
-//                    Spacer(Modifier.size(10.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     val message1 = "created by Mirko Lehn"
                     val message2 = "correctness not guaranteed"
                     val message3 = "consider supporting me on patreon"
@@ -449,28 +598,30 @@ fun Scaffold(
                     val message5 = "consider buying me some coffee"
                     val tickerTextList = listOf(message1, message2, message3, message4, message5)
                     NewsTicker(textList = tickerTextList)
-                    //Column { Icon(Icons.Default.WarningAmber, contentDescription = "Warn") }
                 }
             }
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onFabClick,
-                shape = RoundedCornerShape(50),
-                //containerColor = Color.Black,
-                //modifier = Modifier
-                //    .border(1.dp, Color.White)
-            ) {
-                //camera_enhance
-                Icon(Icons.Default.AddAPhoto, contentDescription = "AddPhoto")
-                //Icon(Icons.Rounded.Menu, contentDescription = "Localized description")
-            }
-        },
-
+        }
     ) { paddingValues ->
-        content(Modifier.padding(paddingValues))
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Main content
+            content(Modifier.padding(paddingValues))
+
+            // Long horizontal mushroom image on top of the BottomAppBar, NICE!
+            Image(
+                painter = painterResource(id = R.drawable.mushrooms),
+                contentDescription = "Mushroom Line",
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 50.dp) // Adjust this value based on your BottomAppBar's height
+                    .height(50.dp) // Set the desired height
+                    .fillMaxWidth(), // Fill the maximum available width
+                contentScale = ContentScale.FillHeight // Scale the image to fill the height
+            )
+
+        }
     }
 }
+
 
 fun Context.createImageFile(): File {
     // Create an image file name

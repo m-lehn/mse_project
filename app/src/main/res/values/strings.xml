@@ -1,4 +1,16 @@
 <resources>
     <string name="app_name">MSE_Project</string>
     <string name="description">Your Picture</string>
+
+    <!-- Mushroom Descriptions -->
+    <string name="agaricus_description">Widely known for edible varieties like the button mushroom. Found in grassy areas and lawns.</string>
+    <string name="amanita_description">Includes both edible and highly poisonous species like the iconic fly agaric. Recognizable by their distinctive caps.</string>
+    <string name="boletus_description">Known for their thick stems and sponge-like caps. Many are edible, but some can cause gastrointestinal discomfort.</string>
+    <string name="cortinarius_description">The largest genus of mushrooms, characterized by a cobweb-like veil between the cap and the stem. Identification can be tricky.</string>
+    <string name="entoloma_description">Mostly found in woodland areas. This genus has a diverse range of species, with some being poisonous.</string>
+    <string name="hygrocybe_description">Known for their bright colors and waxy caps. Commonly found in grasslands, these are often small and brightly colored.</string>
+    <string name="lactarius_description">Notable for the milky fluid they exude when cut. Varieties range from delicious to bitter and peppery.</string>
+    <string name="russula_description">Known for their brittle gills, they come in various colors. While many are edible, identification can be challenging.</string>
+    <string name="suillus_description">Often found under pine trees, these mushrooms have a slimy cap surface and are generally considered good edibles.</string>
 </resources>
+
