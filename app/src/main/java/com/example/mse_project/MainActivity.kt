@@ -1,8 +1,7 @@
 package com.example.mse_project
 
-//import kotlinx.coroutines.flow.internal.NopCollector
-//import android.media.ExifInterface
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -108,7 +107,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             MSE_ProjectTheme {
-                // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -167,7 +165,7 @@ fun AdvertismentPopup(
                     contentDescription = "Patreon Image"
                 )
                 IconButton(
-                    onClick = onCloseClick, // Only closes the dialog
+                    onClick = onCloseClick,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .size(24.dp)
@@ -188,14 +186,15 @@ fun AdvertismentPopup(
     }
 }
 
+@SuppressLint("QueryPermissionsNeeded")
 fun openWebPage(context: Context, url: String) {
-    //Log.d("AdvertismentPopup", "Attempting to open web page: $url")
     val webpage: Uri = Uri.parse(url)
     val intent = Intent(Intent.ACTION_VIEW, webpage)
     if (intent.resolveActivity(context.packageManager) != null) {
         context.startActivity(intent)
     } else {
         //Log.e("AdvertismentPopup", "No Intent available to handle action")
+        //TODO: this happens all the time
     }
 }
 
@@ -222,7 +221,6 @@ fun MyScreen() {
         onBoxClick = { openWebPage(context, webpageUrl) }
     )
 
-    // Prepare a file and URI for the captured image
     val file = rememberSaveable { context.createImageFile() }
     val uri = rememberSaveable { FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", file) }
 
@@ -237,7 +235,6 @@ fun MyScreen() {
         }
     }
 
-    // Permission launcher
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
         if (isGranted) {
             cameraLauncher.launch(uri)
@@ -280,8 +277,6 @@ fun MyScreen() {
             modifier = Modifier
                 .size(size)
                 .clip(RectangleShape)
-                //.padding(15.dp)
-                //.padding(15.dp)
                 .align(Alignment.Center)
         ) {
             if (bitmap != null) {
@@ -325,13 +320,13 @@ private fun cropSquare(bitmap: Bitmap): Bitmap {
     return Bitmap.createBitmap(bitmap, startX, startY, size, size)
 }
 
+//scaling is optional for displaying the image with less memory requirement
 private fun scaleBitmap(bitmap: Bitmap): Bitmap {
     return Bitmap.createScaledBitmap(bitmap, 224, 224, true)
 }
 
 @Composable
 fun ClassifiedResult(bitmap: Bitmap) {
-    val context = LocalContext.current
     val (showPopup, setShowPopup) = remember { mutableStateOf(false) }
     var classificationResult by remember { mutableStateOf("") }
     var infoText by remember { mutableStateOf("") }
@@ -402,13 +397,13 @@ fun ClassifiedResult(bitmap: Bitmap) {
 
 @Composable
 fun MushroomInfoDialog(
-    mushroomClass: String, // Add this parameter for the mushroom class name
+    mushroomClass: String,
     infoText: String,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = mushroomClass) }, // Use mushroomClass here for the title
+        title = { Text(text = mushroomClass) },
         text = { Text(text = infoText) },
         confirmButton = {
             Button(onClick = onDismiss) {
@@ -495,62 +490,6 @@ fun NewsTicker(textList: List<String>) {
     }
 }
 
-//@OptIn(ExperimentalMaterial3Api::class)
-//@Composable
-//fun Scaffold(
-//    topBarTitle: String,
-//    onFabClick: () -> Unit,
-//    content: @Composable (Modifier) -> Unit
-//) {
-//    Scaffold(
-//        topBar = {
-//            TopAppBar(
-//                title = {
-//                    Row(verticalAlignment = Alignment.CenterVertically) {
-//                        Text(topBarTitle)
-//                        Spacer(Modifier.width(8.dp)) // Space between text and icon
-//                        Icon(Icons.Default.Park, contentDescription = "MoreInformation")
-//                    }
-//                }
-//            )
-//        },
-//        bottomBar = {
-//            BottomAppBar(
-//                modifier = Modifier
-//                    .height(50.dp),
-//                containerColor = MaterialTheme.colorScheme.background,
-//                contentColor = Bony,//MaterialTheme.colorScheme.primary,
-//            ) {
-//                Row (verticalAlignment = Alignment.CenterVertically){
-//                    val message1 = "created by Mirko Lehn"
-//                    val message2 = "correctness not guaranteed"
-//                    val message3 = "consider supporting me on patreon"
-//                    val message4 = "eat more mushrooms"
-//                    val message5 = "consider buying me some coffee"
-//                    val tickerTextList = listOf(message1, message2, message3, message4, message5)
-//                    NewsTicker(textList = tickerTextList)
-//                }
-//            }
-//        },
-//        floatingActionButton = {
-//            OutlinedButton(
-//                onClick = onFabClick,
-//                border = BorderStroke(2.dp, Color.White),
-//                modifier = Modifier.size(width = 70.dp, height = 70.dp),
-//                shape = RoundedCornerShape(50),
-//            ) {
-//                //camera_enhance
-//                //Icon(Icons.Default.AddAPhoto, contentDescription = "AddPhoto")
-//                Icon(Icons.Default.CameraAlt, contentDescription = "AddPhoto")
-//                //Icon(Icons.Rounded.Menu, contentDescription = "Localized description")
-//            }
-//        },
-//
-//    ) { paddingValues ->
-//        content(Modifier.padding(paddingValues))
-//    }
-//}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Scaffold(
@@ -577,10 +516,7 @@ fun Scaffold(
                 modifier = Modifier.size(width = 70.dp, height = 70.dp),
                 shape = RoundedCornerShape(50),
             ) {
-                //camera_enhance
-                //Icon(Icons.Default.AddAPhoto, contentDescription = "AddPhoto")
                 Icon(Icons.Default.CameraAlt, contentDescription = "AddPhoto")
-                //Icon(Icons.Rounded.Menu, contentDescription = "Localized description")
             }
         },
         bottomBar = {
@@ -588,7 +524,7 @@ fun Scaffold(
                 modifier = Modifier
                     .height(50.dp),
                 containerColor = MaterialTheme.colorScheme.background,
-                contentColor = Bony,//MaterialTheme.colorScheme.primary,
+                contentColor = Bony,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val message1 = "created by Mirko Lehn"
@@ -603,7 +539,6 @@ fun Scaffold(
         }
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize()) {
-            // Main content
             content(Modifier.padding(paddingValues))
 
             // Long horizontal mushroom image on top of the BottomAppBar, NICE!
@@ -612,10 +547,10 @@ fun Scaffold(
                 contentDescription = "Mushroom Line",
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 50.dp) // Adjust this value based on your BottomAppBar's height
-                    .height(50.dp) // Set the desired height
-                    .fillMaxWidth(), // Fill the maximum available width
-                contentScale = ContentScale.FillHeight // Scale the image to fill the height
+                    .padding(bottom = 50.dp)
+                    .height(50.dp)
+                    .fillMaxWidth(),
+                contentScale = ContentScale.FillHeight
             )
 
         }
@@ -630,8 +565,8 @@ fun Context.createImageFile(): File {
 
     // Create and return a temporary file
     return File.createTempFile(
-        imageFileName, /* prefix */
-        ".jpg", /* suffix */
-        externalCacheDir /* directory */
+        imageFileName,
+        ".jpg",
+        externalCacheDir
     )
 }

@@ -1,6 +1,5 @@
 package com.example.mse_project
 
-//import com.example.mse_project.ml.Model
 import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
@@ -43,7 +42,7 @@ object TensorFLowHelper {
 
         // Runs model inference and gets result.
         val outputs: Mushrooms.Outputs = model.process(inputFeature0)
-        val outputFeature0: TensorBuffer = outputs.getOutputFeature0AsTensorBuffer()
+        val outputFeature0: TensorBuffer = outputs.outputFeature0AsTensorBuffer
         val confidences = outputFeature0.floatArray
 
         // Find the index of the class with the biggest confidence.
