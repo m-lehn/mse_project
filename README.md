@@ -54,6 +54,20 @@ This project is for **educational and experimental purposes only**.
 
 ---
 
+## 🔐 Building a Release APK (to share)
+
+1. In Android Studio: **Build → Generate Signed Bundle / APK…**  
+2. Choose **APK**, create or select a **keystore**, and pick **release**.  
+3. In **Build Variants**, select `release`, then build.  
+4. Find the APK under:  
+   `app/build/outputs/apk/release/app-release.apk`
+
+**ABI compatibility tips**
+- If your testers have mixed devices (ARMv7, ARM64, x86), either:
+  - Build a **universal APK**, or
+  - Enable **ABI splits** to generate per-architecture APKs (smaller but architecture-specific).
+
+---
 
 ## 🕹️ Usage
 
