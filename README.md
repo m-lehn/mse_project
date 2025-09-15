@@ -46,6 +46,15 @@ This project is for **educational and experimental purposes only**.
 
 ---
 
+## 📁 Model File
+
+- The model lives in the repo as **`model.tflight`** (pretrained ResNet-50 + small classification head).  
+- At runtime, the app loads the model from **`app/src/main/assets/`**.  
+- Ensure the **filename in code** matches the file in assets (e.g., `model.tflite` vs `model.tflight`).
+
+---
+
+
 ## 🕹️ Usage
 
 1. Launch the app on your Android device.  
