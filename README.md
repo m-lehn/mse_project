@@ -75,7 +75,8 @@ This project is for **educational and experimental purposes only**.
 2. Take a photo of a mushroom (or load one from gallery).  
 3. The model predicts the most likely **genus** (out of 9 classes).
 
-![Uploading mushroom_collection.png…]()
+
+<img width="1077" height="592" alt="mushroom_collection" src="https://github.com/user-attachments/assets/ffd11940-367f-4767-900d-8beb78fff298" />
 
 
 ---
