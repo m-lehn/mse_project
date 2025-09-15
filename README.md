@@ -34,15 +34,7 @@ This project is for **educational and experimental purposes only**.
 
 - **Frameworks:** Hugging Face, PyTorch, TensorFlow Lite (for mobile deployment)  
 - **Model:** ResNet-50 backbone + small dense classification layer  
-- **Deployment:** Converted for mobile inference, integrated into a basic Android app  
-
----
-
-## 📱 App Preview
-
-👉 *(Placeholder for screenshots — add them here!)*  
-- [ ] Add app UI screenshot  
-- [ ] Add sample classification result screenshot  
+- **Deployment:** Converted for mobile inference, integrated into a basic Android app
 
 ---
 
@@ -96,14 +88,6 @@ This project was not intended as a production-ready mushroom identification tool
 - Explore the balance between **model accuracy, size, and performance**  
 - Prototype a minimal Android app around an ML model  
 - Have fun with a practical but deliberately limited use case  
-
----
-
-## 📷 Screenshots
-
-*(Add some pictures here!)*  
-- App UI  
-- Example classification  
 
 ---
 
