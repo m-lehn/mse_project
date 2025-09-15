@@ -68,7 +68,8 @@ This project is for **educational and experimental purposes only**.
 3. The model predicts the most likely **genus** (out of 9 classes).
 
 
-<img width="1077" height="592" alt="mushroom_collection" src="https://github.com/user-attachments/assets/ffd11940-367f-4767-900d-8beb78fff298" />
+<img width="1086" height="656" alt="mushrooms" src="https://github.com/user-attachments/assets/9d401b5a-ca5d-4ba0-94d5-10a2a9a9bd5b" />
+
 
 
 ---
