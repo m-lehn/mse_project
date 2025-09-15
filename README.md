@@ -73,7 +73,10 @@ This project is for **educational and experimental purposes only**.
 
 1. Launch the app on your Android device.  
 2. Take a photo of a mushroom (or load one from gallery).  
-3. The model predicts the most likely **genus** (out of 9 classes).  
+3. The model predicts the most likely **genus** (out of 9 classes).
+
+![Uploading mushroom_collection.png…]()
+
 
 ---
 
