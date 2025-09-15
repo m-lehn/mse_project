@@ -93,11 +93,4 @@ This project was not intended as a production-ready mushroom identification tool
 
 This app is for **educational purposes only**.  
 Do **not** use it for real mushroom identification.  
-Always consult expert sources before consuming wild mushrooms.  
-
----
-
-## 📚 License
-
-[MIT License](LICENSE)  
-Free to use, modify, and learn from.
+Always consult expert sources before consuming wild mushrooms.
